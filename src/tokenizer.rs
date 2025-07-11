@@ -172,6 +172,41 @@ fn get_comment_token<'i>(input: &mut &'i str) -> Result<Token<'i>> {
         })
 }
 
+pub fn take_string_till_escaping<'a>() -> impl Parser<&'a str, &'a str, ContextError> {
+    move |input: &mut &'a str| {
+        static ESCAPES: &[char; 2] = &['\\', '\''];
+        let mut chars = input.char_indices().peekable();
+
+        loop {
+            let item = chars.next();
+            let next = chars.peek().map(|item| item.1);
+            match item {
+                Some((byte_pos, item)) => {
+                    if ESCAPES.contains(&item) && next.map(|n| n == '\'').unwrap_or(false) {
+                        // consume this and next char
+                        chars.next();
+                        continue;
+                    }
+
+                    // escape of backslash
+                    if item == '\\' && next == Some('\\') {
+                        // consume this and next char
+                        chars.next();
+                        continue;
+                    }
+
+                    if item == '\'' {
+                        return Ok(input.next_slice(byte_pos));
+                    }
+                }
+                None => {
+                    return rest.parse_next(input);
+                }
+            }
+        }
+    }
+}
+
 pub fn take_till_escaping<'a>(
     desired: char,
     escapes: &'static [char],
@@ -213,7 +248,7 @@ fn get_string_token<'i>(input: &mut &'i str) -> Result<Token<'i>> {
         '`' => (take_till_escaping('`', &['`']), any).void(),
         '[' => (take_till_escaping(']', &[']']), any).void(),
         '"' => (take_till_escaping('"', &['"', '\\']), any).void(),
-        '\'' => (take_till_escaping('\'', &['\'', '\\']), any).void(),
+        '\'' => (take_string_till_escaping(),  any).void(),
         'N' => ('\'', take_till_escaping('\'', &['\'', '\\']), any).void(),
         'E' => ('\'', take_till_escaping('\'', &['\'', '\\']), any).void(),
         _ => fail,
