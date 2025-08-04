@@ -301,25 +301,28 @@ fn get_close_paren_token<'i>(input: &mut &'i str) -> Result<Token<'i>> {
         })
 }
 
-fn get_placeholder_token<'i>(input: &mut &'i str, named_placeholders: bool) -> Result<Token<'i>> {
+fn get_placeholder_token<'i>(input: &mut &'i str, _named_placeholders: bool) -> Result<Token<'i>> {
     // The precedence changes based on 'named_placeholders' but not the exhaustiveness.
     // This is to ensure the formatting is the same even if parameters aren't used.
 
-    if named_placeholders {
-        alt((
-            get_ident_named_placeholder_token,
-            get_string_named_placeholder_token,
-            get_indexed_placeholder_token,
-        ))
-        .parse_next(input)
-    } else {
-        alt((
-            get_indexed_placeholder_token,
-            get_ident_named_placeholder_token,
-            get_string_named_placeholder_token,
-        ))
-        .parse_next(input)
-    }
+    // Use only ident_named placeholders for formatting
+    get_ident_named_placeholder_token(input)
+
+    // if named_placeholders {
+    //     alt((
+    //         get_ident_named_placeholder_token,
+    //         get_string_named_placeholder_token,
+    //         get_indexed_placeholder_token,
+    //     ))
+    //     .parse_next(input)
+    // } else {
+    //     alt((
+    //         get_indexed_placeholder_token,
+    //         get_ident_named_placeholder_token,
+    //         get_string_named_placeholder_token,
+    //     ))
+    //     .parse_next(input)
+    // }
 }
 
 fn get_indexed_placeholder_token<'i>(input: &mut &'i str) -> Result<Token<'i>> {
